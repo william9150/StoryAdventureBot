@@ -8,6 +8,7 @@ import {
   handleRoundsInput,
   getCreationState
 } from './storyCreationService';
+import { loadStory } from './storyLoadService';
 import { Story } from '../models';
 
 export const handleMessage = async (event: MessageEvent): Promise<void> => {
@@ -127,11 +128,26 @@ const handleResetStory = async (chatId: string, event: MessageEvent): Promise<vo
   }
 };
 
-const handleLoadStory = async (_text: string, event: MessageEvent): Promise<void> => {
-  await lineClient.replyMessage(event.replyToken, {
-    type: 'text',
-    text: '讀取故事功能開發中...'
-  });
+const handleLoadStory = async (text: string, event: MessageEvent): Promise<void> => {
+  try {
+    // 解析指令：/讀取故事 [故事ID]
+    const parts = text.trim().split(/\s+/);
+    
+    if (parts.length < 2) {
+      await lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: '❌ 請提供 Story ID。\n\n使用方式：/讀取故事 [Story ID]\n\n例如：/讀取故事 abc123-def456'
+      });
+      return;
+    }
+
+    const storyId = parts[1] || '';
+    await loadStory(storyId, event.replyToken);
+    
+  } catch (error) {
+    logger.error('Error handling load story', { text, error });
+    await replyError(event);
+  }
 };
 
 const handleStoryInput = async (chatId: string, userId: string, text: string, event: MessageEvent): Promise<void> => {

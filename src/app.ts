@@ -3,6 +3,7 @@ import cors from 'cors';
 import { lineMiddleware } from './config/line';
 import { webhookRouter } from './routes/webhook';
 import { logger } from './utils/logger';
+import { performHealthCheck } from './utils/healthCheck';
 
 const app = express();
 
@@ -10,12 +11,25 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    service: 'StoryAdventureBot'
-  });
+app.get('/health', async (_req, res) => {
+  try {
+    const healthStatus = await performHealthCheck();
+    const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
+    
+    res.status(statusCode).json({
+      service: 'StoryAdventureBot',
+      timestamp: new Date().toISOString(),
+      ...healthStatus
+    });
+  } catch (error) {
+    logger.error('Health check endpoint error', error);
+    res.status(503).json({
+      service: 'StoryAdventureBot',
+      timestamp: new Date().toISOString(),
+      status: 'unhealthy',
+      error: 'Health check failed'
+    });
+  }
 });
 
 app.use('/webhook', lineMiddleware, webhookRouter);
