@@ -46,12 +46,17 @@ cp .env.example .env
 # 編輯 .env 檔案，填入必要的 API 金鑰
 ```
 
-4. **建置專案**
+4. **初始化資料庫**
+```bash
+npm run db:init
+```
+
+5. **建置專案**
 ```bash
 npm run build
 ```
 
-5. **啟動服務**
+6. **啟動服務**
 ```bash
 npm start
 ```
@@ -160,6 +165,32 @@ npm run build
 
 # 執行測試
 npm test
+```
+
+### 資料庫管理指令
+
+```bash
+# 初始化資料庫（建立索引和測試資料）
+npm run db:init
+
+# 清理舊資料（刪除過期故事和日誌）
+npm run db:cleanup
+
+# 生成資料庫使用報告
+npm run db:report
+```
+
+### 部署與監控指令
+
+```bash
+# 自動化部署
+npm run deploy
+
+# 健康檢查
+npm run health-check
+
+# 等待服務就緒
+npm run health-wait
 ```
 
 ### 專案結構

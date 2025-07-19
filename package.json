@@ -15,7 +15,10 @@
     "test:coverage": "jest --coverage",
     "deploy": "bash scripts/deploy.sh",
     "health-check": "bash scripts/health-check.sh",
-    "health-wait": "bash scripts/health-check.sh wait"
+    "health-wait": "bash scripts/health-check.sh wait",
+    "db:init": "ts-node scripts/init-database.ts",
+    "db:cleanup": "ts-node scripts/cleanup-database.ts",
+    "db:report": "ts-node scripts/cleanup-database.ts --report-only"
   },
   "keywords": ["line-bot", "storytelling", "interactive", "chatbot", "typescript"],
   "author": "",
