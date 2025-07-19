@@ -1,6 +1,14 @@
 import { MessageEvent, TextMessage } from '@line/bot-sdk';
 import { lineClient } from '../config/line';
 import { logger } from '../utils/logger';
+import { 
+  startStoryCreation, 
+  handleThemeInput, 
+  handleCharacterInput, 
+  handleRoundsInput,
+  getCreationState
+} from './storyCreationService';
+import { Story } from '../models';
 
 export const handleMessage = async (event: MessageEvent): Promise<void> => {
   if (event.message.type !== 'text') {
@@ -58,18 +66,65 @@ const getChatId = (event: MessageEvent): string => {
   }
 };
 
-const handleStartStory = async (_chatId: string, _userId: string, event: MessageEvent): Promise<void> => {
-  await lineClient.replyMessage(event.replyToken, {
-    type: 'text',
-    text: '開始故事功能開發中...'
-  });
+const handleStartStory = async (chatId: string, userId: string, event: MessageEvent): Promise<void> => {
+  try {
+    // 檢查是否已有進行中的故事
+    const existingStory = await Story.findOne({ chatId, status: 'in_progress' });
+    if (existingStory) {
+      await lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `⚠️ 此聊天室已有進行中的故事 (Story ID: ${existingStory.storyId})。\n\n如要開始新故事，請先使用 /重設故事 結束目前的故事。`
+      });
+      return;
+    }
+
+    await startStoryCreation(chatId, event.replyToken);
+  } catch (error) {
+    logger.error('Error starting story', { chatId, userId, error });
+    await replyError(event);
+  }
 };
 
-const handleResetStory = async (_chatId: string, event: MessageEvent): Promise<void> => {
-  await lineClient.replyMessage(event.replyToken, {
-    type: 'text',
-    text: '重設故事功能開發中...'
-  });
+const handleResetStory = async (chatId: string, event: MessageEvent): Promise<void> => {
+  try {
+    const existingStory = await Story.findOne({ chatId, status: 'in_progress' });
+    
+    if (!existingStory) {
+      await lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: '❌ 此聊天室目前沒有進行中的故事。'
+      });
+      return;
+    }
+
+    await lineClient.replyMessage(event.replyToken, {
+      type: 'text',
+      text: '⚠️ **確認重設故事**\n\n確定要重設目前正在進行的故事嗎？所有進度將會遺失。',
+      quickReply: {
+        items: [
+          {
+            type: 'action',
+            action: {
+              type: 'postback',
+              label: '是，我確定',
+              data: 'reset_confirm'
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'postback',
+              label: '否，取消',
+              data: 'reset_cancel'
+            }
+          }
+        ]
+      }
+    });
+  } catch (error) {
+    logger.error('Error resetting story', { chatId, error });
+    await replyError(event);
+  }
 };
 
 const handleLoadStory = async (_text: string, event: MessageEvent): Promise<void> => {
@@ -79,8 +134,43 @@ const handleLoadStory = async (_text: string, event: MessageEvent): Promise<void
   });
 };
 
-const handleStoryInput = async (chatId: string, userId: string, text: string, _event: MessageEvent): Promise<void> => {
+const handleStoryInput = async (chatId: string, userId: string, text: string, event: MessageEvent): Promise<void> => {
   logger.debug('Story input received', { chatId, userId, text });
+  
+  try {
+    const creationState = getCreationState(chatId);
+    
+    if (!creationState) {
+      // 如果沒有創建狀態，檢查是否是故事互動
+      const existingStory = await Story.findOne({ chatId, status: 'in_progress' });
+      if (existingStory) {
+        // TODO: 處理故事互動邏輯
+        logger.debug('Story interaction detected', { chatId, text });
+      }
+      return;
+    }
+
+    // 處理故事創建流程中的輸入
+    switch (creationState.step) {
+      case 'theme_input':
+        await handleThemeInput(chatId, text, event.replyToken);
+        break;
+      case 'character_input':
+        await handleCharacterInput(chatId, text, event.replyToken);
+        break;
+      case 'character_assignment':
+        // TODO: 處理角色指派中的 @ 訊息
+        break;
+      case 'rounds_setting':
+        await handleRoundsInput(chatId, text, event.replyToken);
+        break;
+      default:
+        logger.debug('Unhandled creation step', { chatId, step: creationState.step });
+    }
+  } catch (error) {
+    logger.error('Error handling story input', { chatId, userId, text, error });
+    await replyError(event);
+  }
 };
 
 const replyError = async (event: MessageEvent): Promise<void> => {
