@@ -81,3 +81,5 @@ This is an early-stage project focused on creating an engaging interactive story
 # Git 工作流程
 - 保持git的好習慣，隨時git commit
 - 依據開發階段與功能，創建相對應的git branch
+- 已經穩定的程式碼要合併到main branch
+- 隨時將進度push到github
