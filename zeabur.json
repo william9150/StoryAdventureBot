@@ -1,0 +1,13 @@
+{
+  "name": "story-adventure-bot",
+  "build": {
+    "commands": ["npm install", "npm run build"],
+    "outputDirectory": "dist"
+  },
+  "run": {
+    "command": "npm start"
+  },
+  "environment": {
+    "NODE_ENV": "production"
+  }
+}
