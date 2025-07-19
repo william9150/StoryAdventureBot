@@ -16,16 +16,48 @@ async function initializeDatabase(): Promise<void> {
     await mongoose.connect(process.env['MONGODB_URI']);
     logger.info('Connected to MongoDB for initialization');
 
-    // 建立索引
+    // 建立索引（忽略已存在的索引）
     logger.info('Creating database indexes...');
-    await Story.createIndexes();
-    await Round.createIndexes();
-    await ApiCostLog.createIndexes();
+    try {
+      await Story.createIndexes();
+      logger.info('Story indexes created');
+    } catch (error: any) {
+      if (error.code === 86) { // IndexKeySpecsConflict
+        logger.info('Story indexes already exist, skipping');
+      } else {
+        throw error;
+      }
+    }
+
+    try {
+      await Round.createIndexes();
+      logger.info('Round indexes created');
+    } catch (error: any) {
+      if (error.code === 86) {
+        logger.info('Round indexes already exist, skipping');
+      } else {
+        throw error;
+      }
+    }
+
+    try {
+      await ApiCostLog.createIndexes();
+      logger.info('ApiCostLog indexes created');
+    } catch (error: any) {
+      if (error.code === 86) {
+        logger.info('ApiCostLog indexes already exist, skipping');
+      } else {
+        throw error;
+      }
+    }
     
-    logger.info('Database indexes created successfully');
+    logger.info('Database indexes setup completed');
 
     // 驗證連接和集合
     const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection is not available');
+    }
     const collections = await db.listCollections().toArray();
     logger.info('Available collections:', { 
       collections: collections.map(c => c.name) 
