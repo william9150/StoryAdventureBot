@@ -9,7 +9,13 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/**/*.ts",
-    "test": "jest"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "deploy": "bash scripts/deploy.sh",
+    "health-check": "bash scripts/health-check.sh",
+    "health-wait": "bash scripts/health-check.sh wait"
   },
   "keywords": ["line-bot", "storytelling", "interactive", "chatbot", "typescript"],
   "author": "",

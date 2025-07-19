@@ -4,12 +4,25 @@ import { lineMiddleware } from './config/line';
 import { webhookRouter } from './routes/webhook';
 import { logger } from './utils/logger';
 import { performHealthCheck } from './utils/healthCheck';
+import { rateLimiter } from './middleware/rateLimiter';
+import { securityHeaders, removeServerHeader } from './middleware/security';
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Security middleware
+app.use(removeServerHeader);
+app.use(securityHeaders);
+
+// Rate limiting (only for webhook endpoints)
+app.use('/webhook', rateLimiter);
+
+// CORS and body parsing
+app.use(cors({
+  origin: process.env['NODE_ENV'] === 'production' ? false : true,
+  credentials: false
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.get('/health', async (_req, res) => {
   try {

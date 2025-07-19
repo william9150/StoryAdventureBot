@@ -5,6 +5,7 @@ import { Story, Round } from '../models';
 import { generateStoryId } from '../utils/storyId';
 import { StoryCreationState, PlayMode, StoryGenre } from '../types/story.types';
 import { generateStorySegment } from './openaiService';
+import { metrics } from '../utils/metrics';
 
 const creationStates = new Map<string, StoryCreationState>();
 
@@ -343,6 +344,10 @@ const createStory = async (chatId: string, state: StoryCreationState, replyToken
 
     await story.save();
     creationStates.delete(chatId);
+
+    // Update metrics
+    metrics.incrementStories();
+    metrics.incrementActiveStories();
 
     logger.info('Story created successfully', { storyId, chatId });
 
